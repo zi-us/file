@@ -62,10 +62,11 @@
             <main class="flex-1 p-6 overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-semibold text-gray-800">My Files</h2>
-                    <button class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center">
+                    <button id="uploadButton" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center">
                         <i class="fas fa-upload mr-2"></i>
                         Upload File
                     </button>
+                    <input type="file" id="fileInput" class="hidden">
                 </div>
 
                 <!-- File List -->
@@ -118,6 +119,17 @@
         const shareLinkInput = document.getElementById('shareLinkInput');
         const copyLinkBtn = document.getElementById('copyLinkBtn');
         const copySuccessMessage = document.getElementById('copySuccessMessage');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileInput = document.getElementById('fileInput');
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
 
         function renderFiles() {
             fileList.innerHTML = ''; // Clear existing list
@@ -162,21 +174,40 @@
             const file = files.find(f => f.id === fileId);
 
             if (button.classList.contains('download-btn')) {
-                // In a real app, this would be a direct link.
-                // For this demo, we create a temporary link to trigger download.
                 const a = document.createElement('a');
                 a.href = file.url;
-                a.download = file.name; // Suggests a filename to the browser
+                a.download = file.name;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
             }
 
             if (button.classList.contains('share-btn')) {
-                const shareableLink = `${window.location.origin}/share.html?id=${file.id}`;
+                // For a real app, the origin should be your actual domain
+                const shareableLink = `${window.location.origin}${window.location.pathname.replace('dashboard.html', '')}share.html?id=${file.id}`;
                 shareLinkInput.value = shareableLink;
                 shareModal.classList.remove('hidden');
                 copySuccessMessage.classList.add('hidden');
+            }
+        });
+
+        uploadButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const uploadedFile = event.target.files[0];
+            if (uploadedFile) {
+                const newFile = {
+                    id: Date.now().toString(), // Simple unique ID
+                    name: uploadedFile.name,
+                    size: formatBytes(uploadedFile.size),
+                    lastModified: new Date().toISOString().split('T')[0], // Today's date
+                    url: URL.createObjectURL(uploadedFile), // Temporary URL for download
+                    type: 'file'
+                };
+                files.unshift(newFile); // Add to the beginning of the list
+                renderFiles(); // Re-render the list with the new file
             }
         });
 
@@ -186,8 +217,13 @@
         
         copyLinkBtn.addEventListener('click', () => {
             shareLinkInput.select();
-            document.execCommand('copy');
-            copySuccessMessage.classList.remove('hidden');
+            // Using execCommand as a fallback for broader compatibility
+            try {
+                document.execCommand('copy');
+                copySuccessMessage.classList.remove('hidden');
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+            }
         });
 
         window.onclick = function(event) {
