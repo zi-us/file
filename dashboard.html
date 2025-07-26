@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Storage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .file-item:hover {
+            background-color: #f9fafb;
+        }
+        /* Simple transition for modal */
+        #shareModal {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white shadow-md hidden md:block">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-gray-800">File Storage</h1>
+            </div>
+            <nav class="mt-6">
+                <a href="#" class="flex items-center px-6 py-3 text-gray-700 bg-gray-200">
+                    <i class="fas fa-folder mr-3"></i>
+                    My Files
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200">
+                    <i class="fas fa-users mr-3"></i>
+                    Shared with me
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200">
+                    <i class="fas fa-star mr-3"></i>
+                    Starred
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200">
+                    <i class="fas fa-trash mr-3"></i>
+                    Trash
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="flex justify-between items-center p-6 bg-white border-b">
+                <div class="flex items-center">
+                    <input type="search" placeholder="Search for files" class="px-4 py-2 border rounded-md w-full max-w-xs md:max-w-md">
+                </div>
+                <div class="flex items-center">
+                     <button id="logoutButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        Logout
+                    </button>
+                </div>
+            </header>
+            <main class="flex-1 p-6 overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">My Files</h2>
+                    <button class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center">
+                        <i class="fas fa-upload mr-2"></i>
+                        Upload File
+                    </button>
+                </div>
+
+                <!-- File List -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="hidden md:grid grid-cols-12 p-4 border-b font-semibold text-sm text-gray-600">
+                        <div class="col-span-5">Name</div>
+                        <div class="col-span-2">Size</div>
+                        <div class="col-span-2">Last Modified</div>
+                        <div class="col-span-3 text-right">Actions</div>
+                    </div>
+                    <ul id="fileList">
+                        <!-- File items will be dynamically added here -->
+                    </ul>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Share File</h3>
+            <p class="text-gray-600 mb-2">Anyone with this link can view and download the file.</p>
+            <div class="flex items-center bg-gray-100 p-2 rounded-md">
+                <input id="shareLinkInput" type="text" class="bg-transparent border-none flex-1 text-gray-800" readonly>
+                <button id="copyLinkBtn" class="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 ml-2">Copy</button>
+            </div>
+             <p id="copySuccessMessage" class="text-green-500 text-sm mt-2 hidden">Link copied to clipboard!</p>
+            <button id="closeModalBtn" class="mt-6 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 w-full">Done</button>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            window.location.href = 'login.html';
+        });
+
+        // In a real application, these URLs would point to your actual stored files.
+        const files = [
+            { id: '1', name: 'Project_Proposal.pdf', size: '2.5 MB', lastModified: '2024-07-25', url: 'https://placehold.co/600x400/EEE/31343C?text=Project_Proposal.pdf', type: 'file' },
+            { id: '2', name: 'Marketing_Assets.zip', size: '15.2 MB', lastModified: '2024-07-24', url: 'https://placehold.co/600x400/EEE/31343C?text=Marketing_Assets.zip', type: 'file' },
+            { id: '3', name: 'Website_Draft.docx', size: '780 KB', lastModified: '2024-07-23', url: 'https://placehold.co/600x400/EEE/31343C?text=Website_Draft.docx', type: 'file' },
+            { id: '4', name: 'Q2_Financials.xlsx', size: '1.1 MB', lastModified: '2024-07-22', url: 'https://placehold.co/600x400/EEE/31343C?text=Q2_Financials.xlsx', type: 'file' },
+            { id: '5', name: 'Team_Photos', type: 'folder', lastModified: '2024-07-21', url: null },
+        ];
+
+        const fileList = document.getElementById('fileList');
+        const shareModal = document.getElementById('shareModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const shareLinkInput = document.getElementById('shareLinkInput');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+        const copySuccessMessage = document.getElementById('copySuccessMessage');
+
+        function renderFiles() {
+            fileList.innerHTML = ''; // Clear existing list
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.className = 'grid grid-cols-12 p-4 border-b file-item items-center';
+                li.dataset.id = file.id;
+
+                const iconClass = file.type === 'folder' ? 'fa-folder text-yellow-500' : 'fa-file-alt text-gray-500';
+
+                li.innerHTML = `
+                    <div class="col-span-12 md:col-span-5 flex items-center mb-2 md:mb-0">
+                        <i class="fas ${iconClass} w-6 mr-4"></i>
+                        <span class="font-medium text-gray-800">${file.name}</span>
+                    </div>
+                    <div class="col-span-6 md:col-span-2 text-sm text-gray-600"><span class="md:hidden font-semibold mr-2">Size: </span>${file.size || '—'}</div>
+                    <div class="col-span-6 md:col-span-2 text-sm text-gray-600"><span class="md:hidden font-semibold mr-2">Modified: </span>${file.lastModified}</div>
+                    <div class="col-span-12 md:col-span-3 flex items-center justify-end space-x-4 mt-2 md:mt-0">
+                        ${file.type !== 'folder' ? `
+                        <button title="Share" class="text-gray-500 hover:text-blue-600 share-btn">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                        <button title="Download" class="text-gray-500 hover:text-green-600 download-btn">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        ` : ''}
+                        <button title="More options" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                `;
+                fileList.appendChild(li);
+            });
+        }
+
+        fileList.addEventListener('click', (event) => {
+            const button = event.target.closest('button');
+            if (!button) return;
+
+            const li = button.closest('li');
+            const fileId = li.dataset.id;
+            const file = files.find(f => f.id === fileId);
+
+            if (button.classList.contains('download-btn')) {
+                // In a real app, this would be a direct link.
+                // For this demo, we create a temporary link to trigger download.
+                const a = document.createElement('a');
+                a.href = file.url;
+                a.download = file.name; // Suggests a filename to the browser
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            if (button.classList.contains('share-btn')) {
+                const shareableLink = `${window.location.origin}/share.html?id=${file.id}`;
+                shareLinkInput.value = shareableLink;
+                shareModal.classList.remove('hidden');
+                copySuccessMessage.classList.add('hidden');
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            shareModal.classList.add('hidden');
+        });
+        
+        copyLinkBtn.addEventListener('click', () => {
+            shareLinkInput.select();
+            document.execCommand('copy');
+            copySuccessMessage.classList.remove('hidden');
+        });
+
+        window.onclick = function(event) {
+            if (event.target == shareModal) {
+                shareModal.classList.add('hidden');
+            }
+        }
+
+        renderFiles();
+    </script>
+</body>
+</html>
