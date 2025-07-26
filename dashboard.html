@@ -8,78 +8,55 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .file-item:hover {
-            background-color: #f9fafb;
-        }
-        /* Simple transition for modal */
-        #shareModal {
-            transition: opacity 0.3s ease-in-out;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .file-item:hover { background-color: #f9fafb; }
+        #shareModal, #loader, #uploadingIndicator { transition: opacity 0.3s ease-in-out; }
+        .spinner { border-top-color: #3498db; }
     </style>
 </head>
 <body class="bg-gray-100">
+    <!-- Loading Indicator -->
+    <div id="loader" class="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900 spinner"></div>
+    </div>
+    
+    <!-- Uploading Indicator -->
+    <div id="uploadingIndicator" class="fixed inset-0 bg-black bg-opacity-50 flex-col items-center justify-center z-50 hidden">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-white spinner"></div>
+        <p class="text-white mt-4">Uploading...</p>
+    </div>
+
     <div class="flex h-screen">
         <!-- Sidebar -->
         <div class="w-64 bg-white shadow-md hidden md:block">
-            <div class="p-6">
-                <h1 class="text-2xl font-bold text-gray-800">File Storage</h1>
-            </div>
+            <div class="p-6"><h1 class="text-2xl font-bold text-gray-800">File Storage</h1></div>
             <nav class="mt-6">
-                <a href="#" class="flex items-center px-6 py-3 text-gray-700 bg-gray-200">
-                    <i class="fas fa-folder mr-3"></i>
-                    My Files
-                </a>
-                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200">
-                    <i class="fas fa-users mr-3"></i>
-                    Shared with me
-                </a>
-                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200">
-                    <i class="fas fa-star mr-3"></i>
-                    Starred
-                </a>
-                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200">
-                    <i class="fas fa-trash mr-3"></i>
-                    Trash
-                </a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-700 bg-gray-200"><i class="fas fa-folder mr-3"></i>My Files</a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200"><i class="fas fa-users mr-3"></i>Shared with me</a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200"><i class="fas fa-star mr-3"></i>Starred</a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-200"><i class="fas fa-trash mr-3"></i>Trash</a>
             </nav>
         </div>
 
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="flex justify-between items-center p-6 bg-white border-b">
-                <div class="flex items-center">
-                    <input type="search" placeholder="Search for files" class="px-4 py-2 border rounded-md w-full max-w-xs md:max-w-md">
-                </div>
-                <div class="flex items-center">
-                     <button id="logoutButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                        Logout
-                    </button>
-                </div>
+                <input type="search" placeholder="Search for files" class="px-4 py-2 border rounded-md w-full max-w-xs md:max-w-md">
+                <button id="logoutButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Logout</button>
             </header>
             <main class="flex-1 p-6 overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-semibold text-gray-800">My Files</h2>
                     <button id="uploadButton" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center">
-                        <i class="fas fa-upload mr-2"></i>
-                        Upload File
+                        <i class="fas fa-upload mr-2"></i>Upload File
                     </button>
                     <input type="file" id="fileInput" class="hidden">
                 </div>
-
-                <!-- File List -->
                 <div class="bg-white rounded-lg shadow-md">
                     <div class="hidden md:grid grid-cols-12 p-4 border-b font-semibold text-sm text-gray-600">
-                        <div class="col-span-5">Name</div>
-                        <div class="col-span-2">Size</div>
-                        <div class="col-span-2">Last Modified</div>
-                        <div class="col-span-3 text-right">Actions</div>
+                        <div class="col-span-5">Name</div><div class="col-span-2">Size</div><div class="col-span-2">Last Modified</div><div class="col-span-3 text-right">Actions</div>
                     </div>
-                    <ul id="fileList">
-                        <!-- File items will be dynamically added here -->
-                    </ul>
+                    <ul id="fileList"><li id="no-files" class="text-center p-8 text-gray-500">No files found. Upload a file to get started!</li></ul>
                 </div>
             </main>
         </div>
@@ -94,33 +71,52 @@
                 <input id="shareLinkInput" type="text" class="bg-transparent border-none flex-1 text-gray-800" readonly>
                 <button id="copyLinkBtn" class="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 ml-2">Copy</button>
             </div>
-             <p id="copySuccessMessage" class="text-green-500 text-sm mt-2 hidden">Link copied to clipboard!</p>
+            <p id="copySuccessMessage" class="text-green-500 text-sm mt-2 hidden">Link copied!</p>
             <button id="closeModalBtn" class="mt-6 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 w-full">Done</button>
         </div>
     </div>
     
-    <script>
-        document.getElementById('logoutButton').addEventListener('click', function() {
-            window.location.href = 'login.html';
-        });
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
-        // In a real application, these URLs would point to your actual stored files.
-        const files = [
-            { id: '1', name: 'Project_Proposal.pdf', size: '2.5 MB', lastModified: '2024-07-25', url: 'https://placehold.co/600x400/EEE/31343C?text=Project_Proposal.pdf', type: 'file' },
-            { id: '2', name: 'Marketing_Assets.zip', size: '15.2 MB', lastModified: '2024-07-24', url: 'https://placehold.co/600x400/EEE/31343C?text=Marketing_Assets.zip', type: 'file' },
-            { id: '3', name: 'Website_Draft.docx', size: '780 KB', lastModified: '2024-07-23', url: 'https://placehold.co/600x400/EEE/31343C?text=Website_Draft.docx', type: 'file' },
-            { id: '4', name: 'Q2_Financials.xlsx', size: '1.1 MB', lastModified: '2024-07-22', url: 'https://placehold.co/600x400/EEE/31343C?text=Q2_Financials.xlsx', type: 'file' },
-            { id: '5', name: 'Team_Photos', type: 'folder', lastModified: '2024-07-21', url: null },
-        ];
+        // ===================================================================================
+        // TODO: PASTE YOUR FIREBASE CONFIGURATION OBJECT HERE
+        // Find this in your Firebase project settings
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // ===================================================================================
 
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // DOM Elements
         const fileList = document.getElementById('fileList');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileInput = document.getElementById('fileInput');
+        const loader = document.getElementById('loader');
+        const uploadingIndicator = document.getElementById('uploadingIndicator');
+        const noFilesMessage = document.getElementById('no-files');
+
+        // Modal Elements
         const shareModal = document.getElementById('shareModal');
         const closeModalBtn = document.getElementById('closeModalBtn');
         const shareLinkInput = document.getElementById('shareLinkInput');
         const copyLinkBtn = document.getElementById('copyLinkBtn');
         const copySuccessMessage = document.getElementById('copySuccessMessage');
-        const uploadButton = document.getElementById('uploadButton');
-        const fileInput = document.getElementById('fileInput');
+        
+        let filesData = []; // Local cache of files data
 
         function formatBytes(bytes, decimals = 2) {
             if (bytes === 0) return '0 Bytes';
@@ -131,39 +127,81 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
 
-        function renderFiles() {
+        function renderFiles(files) {
             fileList.innerHTML = ''; // Clear existing list
+            if(files.length === 0) {
+                fileList.appendChild(noFilesMessage);
+                noFilesMessage.style.display = 'block';
+            } else {
+                 noFilesMessage.style.display = 'none';
+            }
+            
             files.forEach(file => {
                 const li = document.createElement('li');
                 li.className = 'grid grid-cols-12 p-4 border-b file-item items-center';
                 li.dataset.id = file.id;
 
-                const iconClass = file.type === 'folder' ? 'fa-folder text-yellow-500' : 'fa-file-alt text-gray-500';
+                const iconClass = 'fa-file-alt text-gray-500';
 
                 li.innerHTML = `
-                    <div class="col-span-12 md:col-span-5 flex items-center mb-2 md:mb-0">
-                        <i class="fas ${iconClass} w-6 mr-4"></i>
-                        <span class="font-medium text-gray-800">${file.name}</span>
-                    </div>
+                    <div class="col-span-12 md:col-span-5 flex items-center mb-2 md:mb-0"><i class="fas ${iconClass} w-6 mr-4"></i><span class="font-medium text-gray-800">${file.name}</span></div>
                     <div class="col-span-6 md:col-span-2 text-sm text-gray-600"><span class="md:hidden font-semibold mr-2">Size: </span>${file.size || '—'}</div>
                     <div class="col-span-6 md:col-span-2 text-sm text-gray-600"><span class="md:hidden font-semibold mr-2">Modified: </span>${file.lastModified}</div>
                     <div class="col-span-12 md:col-span-3 flex items-center justify-end space-x-4 mt-2 md:mt-0">
-                        ${file.type !== 'folder' ? `
-                        <button title="Share" class="text-gray-500 hover:text-blue-600 share-btn">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button title="Download" class="text-gray-500 hover:text-green-600 download-btn">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        ` : ''}
-                        <button title="More options" class="text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
+                        <button title="Share" class="text-gray-500 hover:text-blue-600 share-btn"><i class="fas fa-share-alt"></i></button>
+                        <button title="Download" class="text-gray-500 hover:text-green-600 download-btn"><i class="fas fa-download"></i></button>
+                        <button title="More options" class="text-gray-500 hover:text-gray-700"><i class="fas fa-ellipsis-v"></i></button>
                     </div>
                 `;
                 fileList.appendChild(li);
             });
         }
+
+        // Fetch files from Firestore in real-time
+        onSnapshot(collection(db, "files"), (snapshot) => {
+            filesData = [];
+            snapshot.forEach((doc) => {
+                filesData.push({ id: doc.id, ...doc.data() });
+            });
+            // Sort by timestamp descending (newest first)
+            filesData.sort((a, b) => b.timestamp - a.timestamp);
+            renderFiles(filesData);
+            loader.classList.add('hidden');
+        });
+
+        // Event Listeners
+        uploadButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            uploadingIndicator.style.display = 'flex';
+            
+            try {
+                // 1. Upload file to Firebase Storage
+                const storageRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
+                const uploadResult = await uploadBytes(storageRef, file);
+                
+                // 2. Get the public download URL
+                const downloadURL = await getDownloadURL(uploadResult.ref);
+
+                // 3. Add file metadata to Firestore
+                await addDoc(collection(db, "files"), {
+                    name: file.name,
+                    size: formatBytes(file.size),
+                    url: downloadURL,
+                    lastModified: new Date().toISOString().split('T')[0],
+                    timestamp: Date.now()
+                });
+
+            } catch (error) {
+                console.error("Error uploading file:", error);
+                alert("File upload failed. Please try again.");
+            } finally {
+                 uploadingIndicator.style.display = 'none';
+                 fileInput.value = ''; // Reset file input
+            }
+        });
 
         fileList.addEventListener('click', (event) => {
             const button = event.target.closest('button');
@@ -171,19 +209,14 @@
 
             const li = button.closest('li');
             const fileId = li.dataset.id;
-            const file = files.find(f => f.id === fileId);
+            const file = filesData.find(f => f.id === fileId);
+            if (!file) return;
 
             if (button.classList.contains('download-btn')) {
-                const a = document.createElement('a');
-                a.href = file.url;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                window.open(file.url, '_blank');
             }
 
             if (button.classList.contains('share-btn')) {
-                // For a real app, the origin should be your actual domain
                 const shareableLink = `${window.location.origin}${window.location.pathname.replace('dashboard.html', '')}share.html?id=${file.id}`;
                 shareLinkInput.value = shareableLink;
                 shareModal.classList.remove('hidden');
@@ -191,48 +224,21 @@
             }
         });
 
-        uploadButton.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (event) => {
-            const uploadedFile = event.target.files[0];
-            if (uploadedFile) {
-                const newFile = {
-                    id: Date.now().toString(), // Simple unique ID
-                    name: uploadedFile.name,
-                    size: formatBytes(uploadedFile.size),
-                    lastModified: new Date().toISOString().split('T')[0], // Today's date
-                    url: URL.createObjectURL(uploadedFile), // Temporary URL for download
-                    type: 'file'
-                };
-                files.unshift(newFile); // Add to the beginning of the list
-                renderFiles(); // Re-render the list with the new file
-            }
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            shareModal.classList.add('hidden');
-        });
-        
+        // Modal listeners
+        closeModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
         copyLinkBtn.addEventListener('click', () => {
             shareLinkInput.select();
-            // Using execCommand as a fallback for broader compatibility
-            try {
-                document.execCommand('copy');
-                copySuccessMessage.classList.remove('hidden');
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-            }
+            document.execCommand('copy');
+            copySuccessMessage.classList.remove('hidden');
+        });
+        window.onclick = (event) => {
+            if (event.target == shareModal) shareModal.classList.add('hidden');
+        };
+        
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            window.location.href = 'login.html';
         });
 
-        window.onclick = function(event) {
-            if (event.target == shareModal) {
-                shareModal.classList.add('hidden');
-            }
-        }
-
-        renderFiles();
     </script>
 </body>
 </html>
